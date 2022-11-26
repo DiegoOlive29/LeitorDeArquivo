@@ -18,8 +18,6 @@ class DadosView(views.APIView):
                 status = views.status.HTTP_400_BAD_REQUEST,
             )
 
-        write_file(dados=dados)
-
         
 
         
