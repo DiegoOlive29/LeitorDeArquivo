@@ -15,10 +15,23 @@ class TypeOps(models.TextChoices):
 
 class Dado(models.Model):
         typeOp = models.CharField(choices=TypeOps.choices, max_length=22)
-        date = models.DateField(null=True)
-        value = models.CharField(max_length=10)
+        date = models.DateTimeField(null=True,)
+        value = models.IntegerField()
         cpf = models.CharField(max_length=11)
         card = models.CharField(max_length=12)
         hour = models.CharField(max_length=6)
         store_owner = models.CharField(max_length=14)
         store_name = models.CharField(max_length=19)
+       
+        def get_saldo(self)-> str:
+              saldoOnwer = 0
+              for e in Dado.objects.filter(store_owner = self.store_owner):
+                    
+                     saldoOnwer += e.value
+              float(saldoOnwer)
+              
+              
+             
+              
+              return  float(saldoOnwer)   
+        
