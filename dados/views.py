@@ -1,9 +1,12 @@
 from distutils.file_util import write_file
 from django.shortcuts import render
 from rest_framework import views
-from .serializers import DadoSerializer
+from .serializers import DadoSerializer,ListDadoSerializer
 from django.core.files.storage import default_storage
-import  pandas as  pd
+from rest_framework.generics import ListAPIView
+import  datetime as dt
+import pandas as pd
+from .models import Dado
 
 # Create your views here.
 cut_size = [1,8,10,11,12,6,14,19]
@@ -26,7 +29,7 @@ class DadosView(views.APIView):
 
         serializer = DadoSerializer
 
-        dados = resquest.data.get("file", default=None)
+        dados = resquest.data.get('file', default=None)
        
         if dados is None:
             return views.Response(
@@ -34,7 +37,7 @@ class DadosView(views.APIView):
                 status = views.status.HTTP_400_BAD_REQUEST,
             )
 
-        with default_storage.open("CNAB.txt" , "wb+") as arq:
+        with default_storage.open('CNAB.txt' , 'wb+') as arq:
             for chunk in dados.chunks():
                 arq.write(chunk)
         
@@ -42,17 +45,33 @@ class DadosView(views.APIView):
             file = [item for item in text_list ]
             result = []
 
-            dict_text = {}
+          
             for line in file:
                 size = 0 
+                dict_text = {}
                 for index, sizeSum in enumerate(cut_size):
                     dict_text.update({f"{table_camp[index]}":line[size:size+sizeSum]})
                     size += sizeSum
                 result.append(dict_text)
-
-
             
-         
-        
+        for item in result:
+            item['date'] = pd.to_datetime(item['date'],format='%Y%m%d')
+            item['value'] = int(item['value'])/100
+            item['hour'] = f"{item['hour'][0:2]}:{item['hour'][2:4]}:{item['hour'][4:6]}"
+            item['store_owner'] = item['store_owner'].rstrip()
+            item['store_name'] = item['store_name'].rstrip()
 
-        return views.Response(result, views.status.HTTP_201_CREATED)
+        data_result =[]
+        for item in result:
+            act_item = Dado.objects.create(**item)
+            data_result.append(act_item)
+            
+
+        serializer = DadoSerializer(data= data_result, many=True)
+        serializer.is_valid()
+
+        return views.Response(serializer.data, views.status.HTTP_201_CREATED)
+
+class ListDados(ListAPIView):
+    queryset = Dado.objects.all()
+    serializer_class =  ListDadoSerializer
